@@ -6,23 +6,440 @@
     <title>Color Palette Generator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             min-height: 100vh;
+            background: #0f0f1a;
+            color: #eee;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #1a1a2e;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 300% 300%;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .base-color-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .base-color-section label {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .base-color-input {
+            width: 60px;
+            height: 40px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            background: none;
+            padding: 2px;
+        }
+
+        .base-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+        .base-color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 7px;
+        }
+
+        .hex-input {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 0.5rem 0.8rem;
+            color: #eee;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            width: 100px;
+            text-align: center;
+        }
+
+        .hex-input:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        .harmony-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .harmony-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .harmony-tab:hover {
+            background: rgba(255,255,255,0.1);
             color: #eee;
         }
-        h1 { font-size: 2rem; }
-        p { color: #aaa; margin-top: 0.5rem; }
+
+        .harmony-tab.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+
+        .palette-display {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .swatch {
+            width: 120px;
+            height: 160px;
+            border-radius: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .swatch:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .swatch-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.6rem;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+        }
+
+        .swatch:hover .swatch-info {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .swatch-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.7);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        @keyframes swatchIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .copy-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .glow-particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: burst 0.8s ease-out forwards;
+        }
+
+        @keyframes burst {
+            from { opacity: 1; transform: translate(0, 0) scale(1); }
+            to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+        }
+
+        .random-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .random-btn:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
-    <div style="text-align: center;">
-        <h1>Color Palette Generator</h1>
-        <p>Coming soon...</p>
+    <h1>Color Palette Generator</h1>
+
+    <div class="base-color-section">
+        <label>Base Color</label>
+        <input type="color" class="base-color-input" id="baseColor" value="#ff6b6b">
+        <input type="text" class="hex-input" id="hexInput" value="#FF6B6B" maxlength="7">
+        <button class="random-btn" onclick="randomColor()">Random</button>
     </div>
+
+    <div class="harmony-tabs" id="harmonyTabs">
+        <button class="harmony-tab active" data-type="complementary">Complementary</button>
+        <button class="harmony-tab" data-type="analogous">Analogous</button>
+        <button class="harmony-tab" data-type="triadic">Triadic</button>
+        <button class="harmony-tab" data-type="split">Split-Complementary</button>
+        <button class="harmony-tab" data-type="monochromatic">Monochromatic</button>
+    </div>
+
+    <div class="palette-display" id="paletteDisplay"></div>
+
+    <div class="copy-toast" id="copyToast">Copied!</div>
+
+    <script>
+        let baseHue = 0, baseSat = 100, baseLight = 71;
+        let currentHarmony = 'complementary';
+
+        const baseColorInput = document.getElementById('baseColor');
+        const hexInput = document.getElementById('hexInput');
+        const paletteDisplay = document.getElementById('paletteDisplay');
+
+        // Harmony tab clicks
+        document.querySelectorAll('.harmony-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.harmony-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentHarmony = tab.dataset.type;
+                generatePalette();
+            });
+        });
+
+        baseColorInput.addEventListener('input', (e) => {
+            const rgb = hexToRgb(e.target.value);
+            const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+            baseHue = hsl[0]; baseSat = hsl[1]; baseLight = hsl[2];
+            hexInput.value = e.target.value.toUpperCase();
+            generatePalette();
+        });
+
+        hexInput.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if (!val.startsWith('#')) val = '#' + val;
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                baseColorInput.value = val;
+                const rgb = hexToRgb(val);
+                const hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+                baseHue = hsl[0]; baseSat = hsl[1]; baseLight = hsl[2];
+                generatePalette();
+            }
+        });
+
+        function randomColor() {
+            baseHue = Math.random() * 360;
+            baseSat = 60 + Math.random() * 40;
+            baseLight = 40 + Math.random() * 30;
+            const rgb = hslToRgb(baseHue, baseSat, baseLight);
+            const hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+            baseColorInput.value = hex;
+            hexInput.value = hex;
+            generatePalette();
+        }
+
+        function getHarmonyColors(type) {
+            const h = baseHue, s = baseSat, l = baseLight;
+            switch (type) {
+                case 'complementary':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h, s: s * 0.6, l: l + 15, label: 'Light' },
+                        { h: (h + 180) % 360, s, l, label: 'Complement' },
+                        { h: (h + 180) % 360, s: s * 0.6, l: l + 15, label: 'Comp Light' },
+                        { h, s: s * 0.3, l: 20, label: 'Dark' },
+                    ];
+                case 'analogous':
+                    return [
+                        { h: (h - 30 + 360) % 360, s, l, label: '-30' },
+                        { h: (h - 15 + 360) % 360, s, l, label: '-15' },
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 15) % 360, s, l, label: '+15' },
+                        { h: (h + 30) % 360, s, l, label: '+30' },
+                    ];
+                case 'triadic':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 120) % 360, s, l, label: 'Triad 2' },
+                        { h: (h + 240) % 360, s, l, label: 'Triad 3' },
+                        { h: (h + 120) % 360, s: s * 0.5, l: l + 20, label: 'T2 Light' },
+                        { h: (h + 240) % 360, s: s * 0.5, l: l + 20, label: 'T3 Light' },
+                    ];
+                case 'split':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 150) % 360, s, l, label: 'Split 1' },
+                        { h: (h + 210) % 360, s, l, label: 'Split 2' },
+                        { h: (h + 150) % 360, s: s * 0.6, l: l + 15, label: 'S1 Light' },
+                        { h: (h + 210) % 360, s: s * 0.6, l: l + 15, label: 'S2 Light' },
+                    ];
+                case 'monochromatic':
+                    return [
+                        { h, s, l: 15, label: 'Darkest' },
+                        { h, s, l: 30, label: 'Dark' },
+                        { h, s, l, label: 'Base' },
+                        { h, s, l: 70, label: 'Light' },
+                        { h, s: s * 0.5, l: 85, label: 'Lightest' },
+                    ];
+            }
+        }
+
+        function generatePalette() {
+            const colors = getHarmonyColors(currentHarmony);
+            paletteDisplay.innerHTML = '';
+
+            colors.forEach((c, i) => {
+                const clampedS = Math.min(100, Math.max(0, c.s));
+                const clampedL = Math.min(100, Math.max(0, c.l));
+                const rgb = hslToRgb(c.h, clampedS, clampedL);
+                const hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+                const hslStr = `hsl(${Math.round(c.h)}, ${Math.round(clampedS)}%, ${Math.round(clampedL)}%)`;
+
+                const swatch = document.createElement('div');
+                swatch.className = 'swatch';
+                swatch.style.backgroundColor = hslStr;
+                swatch.style.animation = `swatchIn 0.4s ${i * 0.08}s ease both`;
+                swatch.onclick = () => copySwatch(hex, swatch);
+
+                const label = document.createElement('div');
+                label.className = 'swatch-label';
+                label.textContent = c.label;
+
+                const info = document.createElement('div');
+                info.className = 'swatch-info';
+                info.textContent = hex;
+
+                swatch.appendChild(label);
+                swatch.appendChild(info);
+                paletteDisplay.appendChild(swatch);
+            });
+        }
+
+        function copySwatch(hex, el) {
+            navigator.clipboard.writeText(hex);
+
+            // Burst particles
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'glow-particle';
+                const angle = (i / 8) * Math.PI * 2;
+                const dist = 40 + Math.random() * 30;
+                p.style.left = cx + 'px';
+                p.style.top = cy + 'px';
+                p.style.backgroundColor = el.style.backgroundColor;
+                p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+
+            const toast = document.getElementById('copyToast');
+            toast.textContent = `Copied ${hex}`;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+
+        // Color conversion helpers
+        function hslToRgb(h, s, l) {
+            s /= 100; l /= 100;
+            const a = s * Math.min(l, 1 - l);
+            const f = (n) => {
+                const k = (n + h / 30) % 12;
+                return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            };
+            return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
+        }
+
+        function hexToRgb(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return [r, g, b];
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return [h * 360, s * 100, l * 100];
+        }
+
+        generatePalette();
+    </script>
 </body>
 </html>
