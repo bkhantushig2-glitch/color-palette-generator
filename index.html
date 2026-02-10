@@ -13,18 +13,14 @@
             background: #0f0f1a;
             color: #eee;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            text-align: center;
             padding: 2rem;
+            gap: 2rem;
         }
 
         h1 {
             font-size: 2rem;
-            margin-bottom: 2rem;
             background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -149,6 +145,99 @@
             font-size: 0.9rem;
         }
 
+        .harmony-tabs {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .harmony-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .harmony-tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: #eee;
+        }
+
+        .harmony-tab.active {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+
+        .palette-display {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .swatch {
+            width: 120px;
+            height: 160px;
+            border-radius: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .swatch:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .swatch-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.6rem;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+        }
+
+        .swatch:hover .swatch-info {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .swatch-label {
+            position: absolute;
+            top: 0.5rem;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255,255,255,0.7);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        @keyframes swatchIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
         .copy-toast {
             position: fixed;
             bottom: 2rem;
@@ -185,62 +274,99 @@
 
         .glow-particle {
             position: fixed;
-            width: 4px;
-            height: 4px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
+            animation: burst 0.8s ease-out forwards;
         }
 
-        @keyframes floatUp {
-            from { opacity: 1; transform: translateY(0) scale(1); }
-            to { opacity: 0; transform: translateY(-60px) scale(0); }
+        @keyframes burst {
+            from { opacity: 1; transform: translate(0, 0) scale(1); }
+            to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+        }
+
+        .section-divider {
+            width: 80%;
+            max-width: 600px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        }
+
+        .random-btn {
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .random-btn:hover {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            transform: scale(1.05);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Color Palette Generator</h1>
+    <h1>Color Palette Generator</h1>
 
-        <div class="picker-area">
-            <div class="hue-ring-container">
-                <canvas class="hue-ring" id="hueRing" width="260" height="260"></canvas>
-                <div class="hue-indicator" id="hueIndicator"></div>
-                <canvas class="sl-square" id="slSquare" width="110" height="110"></canvas>
-                <div class="sl-indicator" id="slIndicator"></div>
-            </div>
+    <div class="picker-area">
+        <div class="hue-ring-container">
+            <canvas class="hue-ring" id="hueRing" width="260" height="260"></canvas>
+            <div class="hue-indicator" id="hueIndicator"></div>
+            <canvas class="sl-square" id="slSquare" width="110" height="110"></canvas>
+            <div class="sl-indicator" id="slIndicator"></div>
+        </div>
 
-            <div class="preview-section">
-                <div class="color-preview" id="colorPreview"></div>
-                <div class="color-values">
-                    <div class="color-value" onclick="copyValue('hex')" id="hexBox">
-                        <span class="label">HEX</span>
-                        <span class="value" id="hexValue">#FF6B6B</span>
-                    </div>
-                    <div class="color-value" onclick="copyValue('rgb')" id="rgbBox">
-                        <span class="label">RGB</span>
-                        <span class="value" id="rgbValue">rgb(255, 107, 107)</span>
-                    </div>
-                    <div class="color-value" onclick="copyValue('hsl')" id="hslBox">
-                        <span class="label">HSL</span>
-                        <span class="value" id="hslValue">hsl(0, 100%, 71%)</span>
-                    </div>
+        <div class="preview-section">
+            <div class="color-preview" id="colorPreview"></div>
+            <div class="color-values">
+                <div class="color-value" onclick="copyValue('hex')" id="hexBox">
+                    <span class="label">HEX</span>
+                    <span class="value" id="hexValue">#FF6B6B</span>
+                </div>
+                <div class="color-value" onclick="copyValue('rgb')" id="rgbBox">
+                    <span class="label">RGB</span>
+                    <span class="value" id="rgbValue">rgb(255, 107, 107)</span>
+                </div>
+                <div class="color-value" onclick="copyValue('hsl')" id="hslBox">
+                    <span class="label">HSL</span>
+                    <span class="value" id="hslValue">hsl(0, 100%, 71%)</span>
                 </div>
             </div>
+            <button class="random-btn" onclick="randomColor()">Random Color</button>
         </div>
     </div>
+
+    <div class="section-divider"></div>
+
+    <div class="harmony-tabs" id="harmonyTabs">
+        <button class="harmony-tab active" data-type="complementary">Complementary</button>
+        <button class="harmony-tab" data-type="analogous">Analogous</button>
+        <button class="harmony-tab" data-type="triadic">Triadic</button>
+        <button class="harmony-tab" data-type="split">Split-Complementary</button>
+        <button class="harmony-tab" data-type="monochromatic">Monochromatic</button>
+    </div>
+
+    <div class="palette-display" id="paletteDisplay"></div>
 
     <div class="copy-toast" id="copyToast">Copied!</div>
 
     <script>
         let hue = 0, sat = 100, light = 50;
         let draggingHue = false, draggingSL = false;
+        let currentHarmony = 'complementary';
 
         const hueRing = document.getElementById('hueRing');
         const hueIndicator = document.getElementById('hueIndicator');
         const slSquare = document.getElementById('slSquare');
         const slIndicator = document.getElementById('slIndicator');
         const colorPreview = document.getElementById('colorPreview');
+        const paletteDisplay = document.getElementById('paletteDisplay');
 
         function drawHueRing() {
             const ctx = hueRing.getContext('2d');
@@ -314,8 +440,10 @@
 
             updateHueIndicator();
             updateSLIndicator();
+            generatePalette();
         }
 
+        // Hue ring interaction
         hueRing.addEventListener('mousedown', (e) => { draggingHue = true; pickHue(e); });
         document.addEventListener('mousemove', (e) => { if (draggingHue) pickHue(e); });
         document.addEventListener('mouseup', () => { draggingHue = false; draggingSL = false; });
@@ -329,6 +457,7 @@
             updateColor();
         }
 
+        // SL square interaction
         slSquare.addEventListener('mousedown', (e) => { draggingSL = true; pickSL(e); });
         document.addEventListener('mousemove', (e) => { if (draggingSL) pickSL(e); });
 
@@ -341,6 +470,102 @@
             updateColor();
         }
 
+        function randomColor() {
+            hue = Math.random() * 360;
+            sat = 60 + Math.random() * 40;
+            light = 40 + Math.random() * 30;
+            drawSLSquare();
+            updateColor();
+        }
+
+        // Harmony tabs
+        document.querySelectorAll('.harmony-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.harmony-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentHarmony = tab.dataset.type;
+                generatePalette();
+            });
+        });
+
+        function getHarmonyColors(type) {
+            const h = hue, s = sat, l = light;
+            switch (type) {
+                case 'complementary':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h, s: s * 0.6, l: Math.min(l + 15, 95), label: 'Light' },
+                        { h: (h + 180) % 360, s, l, label: 'Complement' },
+                        { h: (h + 180) % 360, s: s * 0.6, l: Math.min(l + 15, 95), label: 'Comp Light' },
+                        { h, s: s * 0.3, l: 20, label: 'Dark' },
+                    ];
+                case 'analogous':
+                    return [
+                        { h: (h - 30 + 360) % 360, s, l, label: '-30' },
+                        { h: (h - 15 + 360) % 360, s, l, label: '-15' },
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 15) % 360, s, l, label: '+15' },
+                        { h: (h + 30) % 360, s, l, label: '+30' },
+                    ];
+                case 'triadic':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 120) % 360, s, l, label: 'Triad 2' },
+                        { h: (h + 240) % 360, s, l, label: 'Triad 3' },
+                        { h: (h + 120) % 360, s: s * 0.5, l: Math.min(l + 20, 95), label: 'T2 Light' },
+                        { h: (h + 240) % 360, s: s * 0.5, l: Math.min(l + 20, 95), label: 'T3 Light' },
+                    ];
+                case 'split':
+                    return [
+                        { h, s, l, label: 'Base' },
+                        { h: (h + 150) % 360, s, l, label: 'Split 1' },
+                        { h: (h + 210) % 360, s, l, label: 'Split 2' },
+                        { h: (h + 150) % 360, s: s * 0.6, l: Math.min(l + 15, 95), label: 'S1 Light' },
+                        { h: (h + 210) % 360, s: s * 0.6, l: Math.min(l + 15, 95), label: 'S2 Light' },
+                    ];
+                case 'monochromatic':
+                    return [
+                        { h, s, l: 15, label: 'Darkest' },
+                        { h, s, l: 30, label: 'Dark' },
+                        { h, s, l, label: 'Base' },
+                        { h, s, l: 70, label: 'Light' },
+                        { h, s: s * 0.5, l: 85, label: 'Lightest' },
+                    ];
+            }
+        }
+
+        function generatePalette() {
+            const colors = getHarmonyColors(currentHarmony);
+            paletteDisplay.innerHTML = '';
+
+            colors.forEach((c, i) => {
+                const clampedS = Math.min(100, Math.max(0, c.s));
+                const clampedL = Math.min(100, Math.max(0, c.l));
+                const rgb = hslToRgb(c.h, clampedS, clampedL);
+                const hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+                const hslStr = `hsl(${Math.round(c.h)}, ${Math.round(clampedS)}%, ${Math.round(clampedL)}%)`;
+
+                const swatch = document.createElement('div');
+                swatch.className = 'swatch';
+                swatch.style.backgroundColor = hslStr;
+                swatch.style.animation = `swatchIn 0.4s ${i * 0.08}s ease both`;
+                swatch.onclick = () => copySwatch(hex, swatch);
+
+                const label = document.createElement('div');
+                label.className = 'swatch-label';
+                label.textContent = c.label;
+
+                const info = document.createElement('div');
+                info.className = 'swatch-info';
+                info.textContent = hex;
+
+                swatch.appendChild(label);
+                swatch.appendChild(info);
+                paletteDisplay.appendChild(swatch);
+            });
+        }
+
+        // Copy color value boxes
         function copyValue(type) {
             const el = document.getElementById(type + 'Value');
             const text = el.textContent;
@@ -355,23 +580,44 @@
             box.appendChild(ripple);
             setTimeout(() => ripple.remove(), 500);
 
-            const rect = box.getBoundingClientRect();
-            for (let i = 0; i < 6; i++) {
+            showParticles(box);
+            showToast(`Copied ${text}`);
+        }
+
+        // Copy swatch
+        function copySwatch(hex, el) {
+            navigator.clipboard.writeText(hex);
+            showParticles(el);
+            showToast(`Copied ${hex}`);
+        }
+
+        function showParticles(el) {
+            const rect = el.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            for (let i = 0; i < 8; i++) {
                 const p = document.createElement('div');
                 p.className = 'glow-particle';
-                p.style.left = (rect.left + Math.random() * rect.width) + 'px';
-                p.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                const angle = (i / 8) * Math.PI * 2;
+                const dist = 40 + Math.random() * 30;
+                p.style.left = cx + 'px';
+                p.style.top = cy + 'px';
                 p.style.backgroundColor = colorPreview.style.backgroundColor;
+                p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
                 document.body.appendChild(p);
-                setTimeout(() => p.remove(), 1000);
+                setTimeout(() => p.remove(), 800);
             }
+        }
 
+        function showToast(text) {
             const toast = document.getElementById('copyToast');
-            toast.textContent = `Copied ${text}`;
+            toast.textContent = text;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 1500);
         }
 
+        // Color conversions
         function hslToRgb(h, s, l) {
             s /= 100; l /= 100;
             const a = s * Math.min(l, 1 - l);
@@ -386,6 +632,7 @@
             return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
         }
 
+        // Init
         drawHueRing();
         drawSLSquare();
         updateColor();
