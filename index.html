@@ -20,7 +20,6 @@
             --overlay: rgba(0,0,0,0.5);
             --toast-bg: rgba(20,20,35,0.9);
             --paint-fade: 15, 15, 26;
-            transition: all 0.4s ease;
         }
 
         [data-theme="light"] {
@@ -183,6 +182,7 @@
             opacity: 0;
             transition: opacity 0.2s ease;
             pointer-events: none;
+            z-index: 2;
         }
 
         .color-strip:hover .strip-content { opacity: 1; pointer-events: auto; }
@@ -243,14 +243,20 @@
 
         /* ── Contrast Badge ── */
         .strip-contrast {
-            font-size: 0.6rem;
-            font-weight: 600;
-            padding: 0.2rem 0.5rem;
+            position: absolute;
+            right: -1px;
+            top: 50%;
+            transform: translate(50%, -50%);
+            font-size: 0.55rem;
+            font-weight: 700;
+            padding: 0.2rem 0.45rem;
             border-radius: 4px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
+            z-index: 15;
+            white-space: nowrap;
         }
-        .contrast-pass { background: rgba(46,213,115,0.25); color: #2ed573; }
-        .contrast-fail { background: rgba(255,71,87,0.25); color: #ff4757; }
+        .contrast-pass { background: rgba(46,213,115,0.9); color: #fff; }
+        .contrast-fail { background: rgba(255,71,87,0.9); color: #fff; }
 
         /* ── Add Color Buttons ── */
         .add-btn {
@@ -261,8 +267,8 @@
             height: 28px;
             border-radius: 50%;
             border: 2px solid rgba(255,255,255,0.15);
-            background: rgba(15, 15, 26, 0.8);
-            color: rgba(255,255,255,0.5);
+            background: var(--overlay);
+            color: var(--text-muted);
             font-size: 1rem;
             cursor: pointer;
             display: flex;
@@ -1016,12 +1022,13 @@
                 hexEl.style.color = textColor;
                 hexEl.textContent = hex;
                 hexEl.title = 'Click to copy';
-                hexEl.onclick = (e) => { e.stopPropagation(); copyHex(hex, hexEl); };
+                hexEl.onclick = (e) => { e.stopPropagation(); copyHex(hex, hexEl, c); };
 
                 content.appendChild(actions);
                 content.appendChild(hexEl);
+                strip.appendChild(content);
 
-                // Contrast badge
+                // Contrast badge (always visible, positioned at strip edge)
                 if (showContrast && i < palette.length - 1) {
                     const nextC = palette[i + 1];
                     const nextRgb = hslToRgb(nextC.h, clamp(nextC.s,0,100), clamp(nextC.l,0,100));
@@ -1030,14 +1037,13 @@
                     badge.className = 'strip-contrast ' + (ratio >= 4.5 ? 'contrast-pass' : 'contrast-fail');
                     badge.textContent = ratio.toFixed(1) + ':1 ' + (ratio >= 7 ? 'AAA' : ratio >= 4.5 ? 'AA' : 'Fail');
                     badge.title = 'Contrast with next color';
-                    content.appendChild(badge);
+                    strip.appendChild(badge);
                 }
 
-                strip.appendChild(content);
                 stripsContainer.appendChild(strip);
             });
 
-            positionAddButtons();
+            requestAnimationFrame(positionAddButtons);
         }
 
         function positionAddButtons() {
@@ -1117,11 +1123,17 @@
         function regenerateHarmony() {
             const base = palette.find(c => !c.locked) || palette[0];
             const colors = getHarmonyColors(harmonySelect.value, base.h, base.s, base.l);
-            for (let i = 0; i < palette.length && i < colors.length; i++) {
+            for (let i = 0; i < palette.length; i++) {
                 if (!palette[i].locked) {
-                    palette[i].h = colors[i].h;
-                    palette[i].s = colors[i].s;
-                    palette[i].l = colors[i].l;
+                    if (i < colors.length) {
+                        palette[i].h = colors[i].h;
+                        palette[i].s = colors[i].s;
+                        palette[i].l = colors[i].l;
+                    } else {
+                        palette[i].h = (base.h + (i * 47)) % 360;
+                        palette[i].s = base.s * (0.5 + Math.random() * 0.5);
+                        palette[i].l = 25 + Math.random() * 50;
+                    }
                 }
             }
             renderPalette();
@@ -1133,7 +1145,7 @@
 
         // ── Spacebar ──
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && !paintMode && document.activeElement === document.body) {
+            if (e.code === 'Space' && !paintMode && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
                 e.preventDefault();
                 randomizePalette();
             }
@@ -1150,10 +1162,16 @@
                 const baseL = 35 + Math.random() * 35;
                 const colors = getHarmonyColors(harmonySelect.value, baseH, baseS, baseL);
                 for (let i = 0; i < palette.length; i++) {
-                    if (!palette[i].locked && i < colors.length) {
-                        palette[i].h = colors[i].h;
-                        palette[i].s = colors[i].s;
-                        palette[i].l = colors[i].l;
+                    if (!palette[i].locked) {
+                        if (i < colors.length) {
+                            palette[i].h = colors[i].h;
+                            palette[i].s = colors[i].s;
+                            palette[i].l = colors[i].l;
+                        } else {
+                            palette[i].h = (baseH + (i * 47)) % 360;
+                            palette[i].s = 55 + Math.random() * 45;
+                            palette[i].l = 35 + Math.random() * 35;
+                        }
                     }
                 }
             } else {
@@ -1294,23 +1312,23 @@
         }
 
         // ── Copy ──
-        function copyHex(hex, el) {
-            navigator.clipboard.writeText(hex);
-            showParticles(el);
+        function copyHex(hex, el, color) {
+            navigator.clipboard.writeText(hex).catch(() => {});
+            showParticles(el, color);
             showToast(`Copied ${hex}`);
         }
 
         function copyPickerValue(type) {
             const el = document.getElementById('picker' + type.charAt(0).toUpperCase() + type.slice(1));
-            navigator.clipboard.writeText(el.textContent);
+            navigator.clipboard.writeText(el.textContent).catch(() => {});
             showToast(`Copied ${el.textContent}`);
         }
 
-        function showParticles(el) {
+        function showParticles(el, color) {
             const rect = el.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
-            const rgb = hslToRgb(pickerH, pickerS, pickerL);
+            const rgb = hslToRgb(color.h, clamp(color.s,0,100), clamp(color.l,0,100));
             for (let i = 0; i < 8; i++) {
                 const p = document.createElement('div');
                 p.className = 'glow-particle';
@@ -1326,11 +1344,13 @@
             }
         }
 
+        let toastTimeout;
         function showToast(text) {
             const toast = document.getElementById('copyToast');
             toast.textContent = text;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 1400);
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toast.classList.remove('show'), 1400);
         }
 
         // ── Paint mode ──
@@ -1631,7 +1651,7 @@
             const fadeBg = getPaintBg();
             paintCtx.fillStyle = `rgb(${fadeBg})`;
             paintCtx.fillRect(0, 0, paintCanvas.width, paintCanvas.height);
-            particles.length = 0; streaks.length = 0;
+            particles.length = 0; streaks.length = 0; streakTimer = 0;
         }
 
         // ── Color math ──
